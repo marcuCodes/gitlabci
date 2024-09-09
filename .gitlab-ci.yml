@@ -1,19 +1,20 @@
 stages:
-  - deploy
+    - deploy
 
 before_script:
   - eval $(ssh-agent -s)
   - ssh-add ~/.ssh/pipe
 
 deployment:
-  stage: deploy
-  script:
-    - ssh $ACCESS_SSH "cd $DIR_BACKEND && git pull origin production --no-ff"
-    - ssh $ACCESS_SSH "cd $DIR_BACKEND && php artisan migrate"
-    - ssh $ACCESS_SSH "cd $DIR_BACKEND && php artisan cache:clear"
-    - ssh $ACCESS_SSH "cd $DIR_BACKEND && php artisan route:clear"
-    - ssh $ACCESS_SSH "cd $DIR_BACKEND && php artisan route:cache"
-    - ssh $ACCESS_SSH "cd $DIR_BACKEND && php artisan config:clear"
-    - ssh $ACCESS_SSH "cd $DIR_BACKEND && php artisan config:cache"
-  only:
-    - production
+    stage: deploy
+    tags:
+        - linux
+    script:
+        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && git pull origin production --no-ff"
+        - ssh $ACCESS_SSH "rm -rf /var/www/html/*"
+        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && npm install"
+        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && npm run build"
+        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && cp -r dist/* /var/www/html/"
+        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && rm -rf dist/"
+    only:
+        - production
