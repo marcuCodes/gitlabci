@@ -1,20 +1,17 @@
 stages:
     - deploy
 
-before_script:
-  - eval $(ssh-agent -s)
-  - ssh-add ~/.ssh/pipe
 
 deployment:
     stage: deploy
     tags:
         - linux
     script:
-        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && git pull origin production --no-ff"
-        - ssh $ACCESS_SSH "rm -rf /var/www/html/*"
-        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && npm install"
-        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && npm run build"
-        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && cp -r dist/* /var/www/html/"
-        - ssh $ACCESS_SSH "cd $DIR_FRONTEND && rm -rf dist/"
+        - cd $DIR_FRONTEND && git pull origin production --no-ff
+        - rm -rf /var/www/html/*
+        - cd $DIR_FRONTEND && npm install
+        - cd $DIR_FRONTEND && npm run build
+        - cd $DIR_FRONTEND && cp -r dist/* /var/www/html/
+        - cd $DIR_FRONTEND && rm -rf dist/
     only:
         - production
