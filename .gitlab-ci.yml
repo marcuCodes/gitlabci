@@ -1,18 +1,31 @@
 stages:
   - deploy
+  - post
+
+before_script:
+  - cd $DIR_BACKEND
+
+.default:
+  tags:
+    - linux
+  only:
+    - production
 
 
 deployment:
+  extends: .default
   stage: deploy
-  tags:
-    - linux
   script:
-    - cd $DIR_BACKEND && git pull origin production --no-ff
-    - cd $DIR_BACKEND && php artisan migrate
-    - cd $DIR_BACKEND && php artisan cache:clear
-    - cd $DIR_BACKEND && php artisan route:clear
-    - cd $DIR_BACKEND && php artisan route:cache
-    - cd $DIR_BACKEND && php artisan config:clear
-    - cd $DIR_BACKEND && php artisan config:cache
-  only:
-    - production
+    - git pull origin production --no-ff
+
+
+post_deployment:
+  extends: .default
+  stage: post
+  script:
+    - php artisan migrate
+    - php artisan cache:clear
+    - php artisan route:clear
+    - php artisan route:cache
+    - php artisan config:clear
+    - php artisan config:cache
