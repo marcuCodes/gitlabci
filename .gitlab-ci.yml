@@ -1,17 +1,30 @@
 stages:
     - deploy
+    - post
+
+before_script:
+    - cd $DIR_FRONTEND
+
+.default:
+    tags:
+        - linux
+    only:
+        - production
 
 
 deployment:
+    extends: .default
     stage: deploy
-    tags:
-        - linux
     script:
-        - cd $DIR_FRONTEND && git pull origin production --no-ff
+        - git pull origin production --no-ff
+
+
+post_deployment:
+    extends: .default
+    stage: post
+    script:
         - rm -rf /var/www/html/*
-        - cd $DIR_FRONTEND && npm install
-        - cd $DIR_FRONTEND && npm run build
-        - cd $DIR_FRONTEND && cp -r dist/* /var/www/html/
-        - cd $DIR_FRONTEND && rm -rf dist/
-    only:
-        - production
+        - npm install
+        - npm run build
+        - cp -r dist/* /var/www/html/
+        - rm -rf dist/
