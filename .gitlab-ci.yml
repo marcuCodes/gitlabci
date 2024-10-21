@@ -1,31 +1,51 @@
 stages:
+  - sast
   - deploy
   - post
 
-before_script:
-  - cd $DIR_BACKEND
-
-.default:
+default:
   tags:
-    - linux
-  only:
-    - production
+    - docker
+  #cache: []
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+
+.before_deployment:
+  image: php:8.2-cli
+  before_script:
+    - apt-get update && apt-get install openssh-client git -y
+    - eval $(ssh-agent -s)
+    - mkdir -p $PATH_SSH_RH
+    - echo "$KEY_RH" | tr -d '\r' > $PATH_KEY_RH
+    - chmod 600 $PATH_KEY_RH
+    - ssh-add $PATH_KEY_RH
+    - ssh-keyscan -H $IP_RH >> $PATH_HOST_RH
+
+
+sast:
+  stage: sast
+  image: registry.gitlab.com/security-products/semgrep:5
+  script:
+    - /analyzer run
 
 
 deployment:
-  extends: .default
   stage: deploy
+  extends: .before_deployment
+  only:
+    - production
   script:
-    - git pull origin production --no-ff
+    - ssh $USER_RH@$IP_RH "cd $PATH_BACKEND_RH && git pull origin production --no-ff"
 
 
 post_deployment:
-  extends: .default
   stage: post
+  extends: .before_deployment
+  only:
+    - production
   script:
-    - php artisan migrate
-    - php artisan cache:clear
-    - php artisan route:clear
-    - php artisan route:cache
-    - php artisan config:clear
-    - php artisan config:cache
+    - ssh $USER@$IP_RH "cd $PATH_BACKEND_RH && php artisan migrate && php artisan cache:clear && php artisan route:clear && php artisan route:cache && php artisan config:clear && php artisan config:cache"
+
+after_script:
+  - rm -rf $PATH_SSH_RH
